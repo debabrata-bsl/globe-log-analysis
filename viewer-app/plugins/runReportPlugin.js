@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { platform } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -153,9 +153,12 @@ function runReportMiddleware(req, res) {
     } finally {
       try {
         rmSync(workDir, { recursive: true, force: true });
-      } catch {
-        /* ignore */
-      }
+      } catch { /* ignore */ }
+      try {
+        if (existsSync(tmpBase) && readdirSync(tmpBase).length === 0) {
+          rmSync(tmpBase, { recursive: true, force: true });
+        }
+      } catch { /* ignore */ }
     }
   });
 }
@@ -263,9 +266,12 @@ function runMsisdnReportMiddleware(req, res) {
     } finally {
       try {
         rmSync(workDir, { recursive: true, force: true });
-      } catch {
-        /* ignore */
-      }
+      } catch { /* ignore */ }
+      try {
+        if (existsSync(tmpBase) && readdirSync(tmpBase).length === 0) {
+          rmSync(tmpBase, { recursive: true, force: true });
+        }
+      } catch { /* ignore */ }
     }
   });
 }
