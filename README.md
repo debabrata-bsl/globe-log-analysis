@@ -14,13 +14,13 @@ cd globe-log-analysis
 Navigate to the viewer-app directory to install dependencies and start the development server:
 
 Bash
-# Move into the viewer-app folder
+Move into the viewer-app folder
 cd viewer-app
 
-# Install necessary packages
+Install necessary packages
 npm install
 
-# Start the development server
+Start the development server
 npm run dev
 📁 Project Structure
 scripts/: Contains Python scripts for log parsing and data processing.
