@@ -168,54 +168,127 @@
   display: none;
 }
 
-/* Single toolbar control: CSV files | folder (same handler as before) */
-.file-pick-group {
+/* ── Segmented toggle: Log CSV | Folder ── */
+.file-pick-toggle {
   display: inline-flex;
   align-items: stretch;
-  border-radius: 6px;
+  border-radius: 10px;
   overflow: hidden;
-  border: 2px solid #e2e8f0;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  border: 1.5px solid #d1d5db;
+  background: #ffffff;
 }
 
-.file-pick-group:hover {
-  border-color: #6366f1;
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.18);
-  transform: translateY(-2px);
-}
-
-.file-pick-segment {
+.pick-toggle-btn {
+  all: unset;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.45rem 1rem;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.88rem;
-  color: #475569;
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  transition: color 0.2s ease, background 0.2s ease;
+  color: #6b7280;
+  background: transparent;
+  transition: color 0.18s ease, background 0.18s ease;
+  position: relative;
+  white-space: nowrap;
 }
 
-.file-pick-segment:hover {
-  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-  color: #fff;
-}
-
-.file-pick-segment input {
-  display: none;
-}
-
-.file-pick-group-divider {
+.pick-toggle-btn + .pick-toggle-btn::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
   width: 1px;
-  align-self: stretch;
-  background: #cbd5e1;
-  flex-shrink: 0;
+  background: #d1d5db;
+  pointer-events: none;
 }
 
-.file-pick-group:hover .file-pick-group-divider {
-  background: rgba(255, 255, 255, 0.35);
+.pick-toggle-btn.active {
+  color: #4f46e5;
+}
+
+.pick-toggle-btn:hover:not(.active) {
+  color: #374151;
+  background: #f9fafb;
+}
+
+/* ── Open button (blue) ── */
+.open-file-btn {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.48rem 1.1rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
+  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  white-space: nowrap;
+}
+
+.open-file-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+  transform: translateY(-1px);
+}
+
+.open-file-btn:active {
+  transform: translateY(0);
+}
+
+.open-file-icon {
+  font-size: 1.15rem;
+}
+
+/* ── Open button wrapper & dropdown ── */
+.open-file-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.open-file-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 140px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  padding: 0.3rem;
+  z-index: 200;
+  animation: menuFadeIn 0.15s ease;
+}
+
+@keyframes menuFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.open-file-menu-item {
+  all: unset;
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #334155;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.open-file-menu-item:hover {
+  background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+  color: #4f46e5;
 }
 
 #wrap {
@@ -905,7 +978,7 @@ body.modal-open .analysis-modal-overlay {
 }
 
 .file-pick,
-.file-pick-group,
+.file-pick-toggle,
 .inline-label select {
   border-radius: 12px;
 }
@@ -986,35 +1059,7 @@ body.modal-open .analysis-modal-overlay {
   transform: translateY(-1px);
 }
 
-.build-panel .file-pick-group {
-  border: 1px solid #d9e2ef;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-}
-
-.build-panel .file-pick-group:hover {
-  border-color: #93c5fd;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.18);
-  transform: translateY(-1px);
-}
-
-.build-panel .file-pick-segment {
-  background: transparent;
-  color: #334155;
-}
-
-.build-panel .file-pick-segment:hover {
-  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
-  color: #1d4ed8;
-}
-
-.build-panel .file-pick-group-divider {
-  background: #e2e8f0;
-}
-
-.build-panel .file-pick-group:hover .file-pick-group-divider {
-  background: #bfdbfe;
-}
+/* build-panel toggle inherits base styles */
 
 .build-panel .inline-label {
   padding: 0.35rem 0.55rem;

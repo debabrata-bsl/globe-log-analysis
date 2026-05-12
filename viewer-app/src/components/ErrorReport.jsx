@@ -18,7 +18,7 @@ import {
   MAX_FILE_SIZE_WARNING,
   CHUNK_SIZE,
 } from "../indexedDB.js";
-import { MdDelete, MdOutlineSearch } from "react-icons/md";
+import { MdDelete, MdOutlineSearch, MdFileUpload } from "react-icons/md";
 import { HiOutlineChartBar } from "react-icons/hi";
 import * as XLSX from "xlsx";
 import FailureAnalysisModal from "./FailureAnalysisModal.jsx";
@@ -29,6 +29,7 @@ const VIRTUAL_ROW_HEIGHT = 52;
 const VIRTUAL_ROW_BUFFER = 60;
 const RUN_FILE_BATCH_SIZE = Number(import.meta.env.VITE_RUN_FILE_BATCH_SIZE) || 8;
 const RUN_SUCCESS_MESSAGE_MS = 4000;
+const MAX_TOTAL_UPLOAD_BYTES = 800 * 1024 * 1024;
 
 function reportCacheKey(pageKey) {
   return `${pageKey}_last_report_matrix`;
@@ -684,6 +685,8 @@ export default function ErrorReport({
   const [tableScrollTop, setTableScrollTop] = useState(0);
   const [tableViewportHeight, setTableViewportHeight] = useState(520);
   const tableWrapRef = useRef(null);
+  const csvInputRef = useRef(null);
+  const folderInputRef = useRef(null);
   const scrollRafRef = useRef(null);
   const pendingScrollTopRef = useRef(0);
   const runSuccessTimerRef = useRef(null);
@@ -901,8 +904,16 @@ export default function ErrorReport({
       return;
     }
 
+    let runningBytes = uploads.reduce((sum, u) => sum + (u.size || 0), 0);
     const items = [];
+    let skippedCount = 0;
+
     for (const f of csvFiles) {
+      if (runningBytes + f.size > MAX_TOTAL_UPLOAD_BYTES) {
+        skippedCount++;
+        continue;
+      }
+
       if (f.size > MAX_FILE_SIZE_WARNING) {
         setRunMessage({
           type: "err",
@@ -915,7 +926,9 @@ export default function ErrorReport({
         const text = await readFileInChunks(f);
         const id = newUploadId();
         await saveUpload({ id, name: f.name, text }, pageKey);
-        items.push({ id, name: f.name, size: text.length, savedAt: Date.now() });
+        const fileBytes = f.size;
+        runningBytes += fileBytes;
+        items.push({ id, name: f.name, size: fileBytes, savedAt: Date.now() });
       } catch (err) {
         setRunMessage({ type: "err", text: `Could not read file: ${f.name}` });
         setFileLoading(null);
@@ -923,10 +936,28 @@ export default function ErrorReport({
       }
     }
 
-    setUploads((prev) => [...prev, ...items]);
-    setSelectedUploadId((prevSel) => prevSel || items[0].id);
+    if (items.length > 0) {
+      const newNames = new Set(items.map((i) => i.name));
+      setUploads((prev) => {
+        const dupeIds = prev.filter((u) => newNames.has(u.name)).map((u) => u.id);
+        for (const id of dupeIds) deleteUpload(id, pageKey);
+        return [...prev.filter((u) => !newNames.has(u.name)), ...items];
+      });
+      setSelectedUploadId((prevSel) => prevSel || items[0].id);
+    }
+
     setFileLoading(null);
-    setRunMessage({ type: "ok", text: `Loaded ${items.length} file(s).` });
+    const loadedMB = (runningBytes / (1024 * 1024)).toFixed(1);
+    if (skippedCount > 0) {
+      setRunMessage({
+        type: "ok",
+        text: `Loaded ${items.length} file(s) (${loadedMB} MB). Skipped ${skippedCount} file(s) — 800 MB limit reached.`,
+      });
+    } else if (items.length > 0) {
+      setRunMessage({ type: "ok", text: `Loaded ${items.length} file(s) (${loadedMB} MB).` });
+    } else {
+      setRunMessage({ type: "err", text: "No files could be loaded — 800 MB limit already reached." });
+    }
     ev.target.value = "";
   };
 
@@ -1224,32 +1255,38 @@ export default function ErrorReport({
     <div className="report-container">
       <div className="panel no-print build-panel">
         <div className="panel-row">
-          <div
-            className="file-pick-group"
-            role="group"
-            aria-label="Upload log CSV files or a folder of CSVs"
-            title="Choose CSV file(s), or pick a folder to load every .csv inside it."
+          <button
+            type="button"
+            className="open-file-btn"
+            onClick={() => csvInputRef.current?.click()}
           >
-            <label className="file-pick-segment">
-              <span>Log CSV</span>
-              <input
-                type="file"
-                accept=".csv,text/csv,text/plain"
-                multiple
-                onChange={onLogFilesSelected}
-              />
-            </label>
-            <span className="file-pick-group-divider" aria-hidden="true" />
-            <label className="file-pick-segment">
-              <span>Folder</span>
-              <input
-                type="file"
-                webkitdirectory=""
-                directory=""
-                onChange={onLogFilesSelected}
-              />
-            </label>
-          </div>
+            <MdFileUpload className="open-file-icon" />
+            Open with CSV
+          </button>
+          <button
+            type="button"
+            className="open-file-btn"
+            onClick={() => folderInputRef.current?.click()}
+          >
+            <MdFileUpload className="open-file-icon" />
+            Open Folder
+          </button>
+          <input
+            ref={csvInputRef}
+            type="file"
+            accept=".csv,text/csv,text/plain"
+            multiple
+            onChange={onLogFilesSelected}
+            style={{ display: "none" }}
+          />
+          <input
+            ref={folderInputRef}
+            type="file"
+            webkitdirectory=""
+            directory=""
+            onChange={onLogFilesSelected}
+            style={{ display: "none" }}
+          />
           {uploads.length > 0 && (
             <>
               {uploads.length > 1 && (
