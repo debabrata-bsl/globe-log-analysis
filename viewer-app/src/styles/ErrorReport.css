@@ -566,8 +566,18 @@ body.modal-open .app-root {
 
   #wrap {
     overflow: visible !important;
+    max-height: none !important;
     border: none !important;
     box-shadow: none !important;
+  }
+
+  .cell,
+  .cell-log {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    line-clamp: unset !important;
+    overflow: visible !important;
+    white-space: normal !important;
   }
 
   .data-table {

@@ -684,6 +684,7 @@ export default function ErrorReport({
   const [fileLoading, setFileLoading] = useState(null);
   const [tableScrollTop, setTableScrollTop] = useState(0);
   const [tableViewportHeight, setTableViewportHeight] = useState(520);
+  const [isPrinting, setIsPrinting] = useState(false);
   const tableWrapRef = useRef(null);
   const csvInputRef = useRef(null);
   const folderInputRef = useRef(null);
@@ -1037,6 +1038,21 @@ export default function ErrorReport({
   }, [uploads, selectedUploadId, mergeAll]);
 
   useEffect(() => {
+    const onAfter = () => setIsPrinting(false);
+    window.addEventListener("afterprint", onAfter);
+    return () => window.removeEventListener("afterprint", onAfter);
+  }, []);
+
+  useEffect(() => {
+    if (isPrinting) {
+      const raf = requestAnimationFrame(() => {
+        setTimeout(() => window.print(), 100);
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [isPrinting]);
+
+  useEffect(() => {
     const t = setTimeout(() => setDebouncedSearchQuery(searchQuery), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(t);
   }, [searchQuery]);
@@ -1379,8 +1395,8 @@ export default function ErrorReport({
         <button
           type="button"
           className="primary"
-          disabled={!hasData}
-          onClick={() => window.print()}
+          disabled={!hasData || isPrinting}
+          onClick={() => setIsPrinting(true)}
         >
           Print / Save as PDF
         </button>
@@ -1439,7 +1455,7 @@ export default function ErrorReport({
             hidden={false}
             ref={tableWrapRef}
             onScroll={handleTableScroll}
-            style={{ maxHeight: "68vh", overflow: "auto" }}
+            style={isPrinting ? {} : { maxHeight: "68vh", overflow: "auto" }}
           >
             <table
               className={compactTable ? "data-table compact" : "data-table"}
@@ -1478,46 +1494,81 @@ export default function ErrorReport({
                 </tr>
               </thead>
               <tbody>
-                {virtualRows.topPad > 0 ? (
-                  <tr aria-hidden="true">
-                    <td colSpan={tableView.displayColumns.length} style={{ height: `${virtualRows.topPad}px`, padding: 0, border: 0 }} />
-                  </tr>
-                ) : null}
-                {virtualRows.rows.map(({ origIndex, row }) => {
-                  const seq = tableView.meta.seqByRow[origIndex] ?? "";
-                  return (
-                    <tr key={origIndex}>
-                      {tableView.displayColumns.map((col) => {
-                        const val = displayCellValue(col, row, seq);
-                        const colLower = String(col.label || "").toLowerCase();
-                        const isFailureLogCol =
-                          colLower.includes("failurereason") ||
-                          colLower.includes("failure_reason") ||
-                          colLower.includes("failure_log");
-                        return (
-                          <td key={col.key}>
-                            <div
-                              className={
-                                col.virtual === "session-seq"
-                                  ? "cell cell-seq"
-                                  : isFailureLogCol
-                                  ? "cell cell-log"
-                                  : "cell"
-                              }
-                            >
-                              {val}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-                {virtualRows.bottomPad > 0 ? (
-                  <tr aria-hidden="true">
-                    <td colSpan={tableView.displayColumns.length} style={{ height: `${virtualRows.bottomPad}px`, padding: 0, border: 0 }} />
-                  </tr>
-                ) : null}
+                {isPrinting ? (
+                  tableView.rows.map(({ origIndex, row }) => {
+                    const seq = tableView.meta.seqByRow[origIndex] ?? "";
+                    return (
+                      <tr key={origIndex}>
+                        {tableView.displayColumns.map((col) => {
+                          const val = displayCellValue(col, row, seq);
+                          const colLower = String(col.label || "").toLowerCase();
+                          const isFailureLogCol =
+                            colLower.includes("failurereason") ||
+                            colLower.includes("failure_reason") ||
+                            colLower.includes("failure_log");
+                          return (
+                            <td key={col.key}>
+                              <div
+                                className={
+                                  col.virtual === "session-seq"
+                                    ? "cell cell-seq"
+                                    : isFailureLogCol
+                                    ? "cell cell-log"
+                                    : "cell"
+                                }
+                              >
+                                {val}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <>
+                    {virtualRows.topPad > 0 ? (
+                      <tr aria-hidden="true">
+                        <td colSpan={tableView.displayColumns.length} style={{ height: `${virtualRows.topPad}px`, padding: 0, border: 0 }} />
+                      </tr>
+                    ) : null}
+                    {virtualRows.rows.map(({ origIndex, row }) => {
+                      const seq = tableView.meta.seqByRow[origIndex] ?? "";
+                      return (
+                        <tr key={origIndex}>
+                          {tableView.displayColumns.map((col) => {
+                            const val = displayCellValue(col, row, seq);
+                            const colLower = String(col.label || "").toLowerCase();
+                            const isFailureLogCol =
+                              colLower.includes("failurereason") ||
+                              colLower.includes("failure_reason") ||
+                              colLower.includes("failure_log");
+                            return (
+                              <td key={col.key}>
+                                <div
+                                  className={
+                                    col.virtual === "session-seq"
+                                      ? "cell cell-seq"
+                                      : isFailureLogCol
+                                      ? "cell cell-log"
+                                      : "cell"
+                                  }
+                                >
+                                  {val}
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                    {virtualRows.bottomPad > 0 ? (
+                      <tr aria-hidden="true">
+                        <td colSpan={tableView.displayColumns.length} style={{ height: `${virtualRows.bottomPad}px`, padding: 0, border: 0 }} />
+                      </tr>
+                    ) : null}
+                  </>
+                )}
               </tbody>
             </table>
           </div>
